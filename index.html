@@ -140,6 +140,47 @@
       font-size: 12px;
       margin-top: 5px;
     }
+
+    .model-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .preset-btn {
+      background-color: var(--accent-color);
+      color: var(--white);
+      border: none;
+      border-radius: var(--border-radius);
+      padding: 8px 15px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .preset-btn:hover {
+      background-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+
+    .model-info {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      margin-top: 30px;
+      box-shadow: var(--shadow);
+    }
+
+    .model-info h3 {
+      color: var(--primary-color);
+      margin-bottom: 15px;
+    }
+
+    .model-info p {
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
   </style>
 </head>
 
@@ -151,6 +192,17 @@
     </div>
 
     <div class="calculator">
+      <h3>选择常用模型预设:</h3>
+      <div class="model-presets">
+        <button class="preset-btn" data-input="0.27" data-output="1.10">DeepSeek-V3</button>
+        <button class="preset-btn" data-input="0.55" data-output="2.19">DeepSeek-R1</button>
+        <button class="preset-btn" data-input="2.50" data-output="10.00">GPT-4o</button>
+        <button class="preset-btn" data-input="0.15" data-output="0.60">GPT-4o mini</button>
+        <button class="preset-btn" data-input="3.00" data-output="15.00">Claude 3.5 Sonnet</button>
+        <button class="preset-btn" data-input="3.00" data-output="15.00">Claude 3.7 Sonnet</button>
+        <button class="preset-btn" data-input="0.10" data-output="0.40">Gemini 2.0 Flash</button>
+      </div>
+
       <div class="input-group">
         <div class="input-field">
           <label for="input-price">输入价格 ($/百万 Token)</label>
@@ -186,6 +238,20 @@
       <div id="input-cost" class="detail">输入成本: $0.00</div>
       <div id="output-cost" class="detail">输出成本: $0.00</div>
     </div>
+
+    <div class="model-info">
+      <h3>AI 模型 Token 计价说明</h3>
+      <p>大多数商业 AI 大语言模型（LLM）采用基于 Token 的计费方式，通常对输入（提示词）和输出（回复）采用不同的价格。</p>
+      <p><strong>什么是 Token?</strong> Token 是模型处理文本的基本单位，大约相当于 4 个字符或 0.75 个英文单词。中文通常每个汉字消耗约 2 个 Token。</p>
+      <p><strong>常见模型价格对比：</strong></p>
+      <p>- <strong>DeepSeek-V3</strong>: 输入 $0.27/百万Token，输出 $1.10/百万Token，上下文长度 128K。</p>
+      <p>- <strong>DeepSeek-R1</strong>: 输入 $0.55/百万Token，输出 $2.19/百万Token，上下文长度 64K。</p>
+      <p>- <strong>GPT-4o</strong>: 输入 $2.50/百万Token，输出 $10.00/百万Token，上下文长度 128K。</p>
+      <p>- <strong>GPT-4o mini</strong>: 输入 $0.15/百万Token，输出 $0.60/百万Token，上下文长度 128K。</p>
+      <p>- <strong>Claude 3.5/3.7 Sonnet</strong>: 输入 $3.00/百万Token，输出 $15.00/百万Token，上下文长度 200K。</p>
+      <p>- <strong>Gemini 2.0 Flash</strong>: 输入 $0.10/百万Token，输出 $0.40/百万Token，上下文长度 1M。</p>
+      <p>价格可能会随时变动，本工具帮助您快速计算不同场景下的 Token 成本，优化您的 AI 使用预算。</p>
+    </div>
   </div>
 
   <footer style="text-align: center; margin-top: 30px; padding: 20px; color: #666; font-size: 14px;">
@@ -219,9 +285,36 @@
     const inputCostElement = document.getElementById('input-cost');
     const outputCostElement = document.getElementById('output-cost');
 
-    // 添加事件监听器，当输入变化时计算价格
+    // 从localStorage加载数据
+    function loadFromLocalStorage() {
+      if (localStorage.getItem('tokenCalcData')) {
+        const savedData = JSON.parse(localStorage.getItem('tokenCalcData'));
+        
+        inputPrice.value = savedData.inputPrice || 0.5;
+        outputPrice.value = savedData.outputPrice || 1.5;
+        inputTokens.value = savedData.inputTokens || 1000;
+        outputTokens.value = savedData.outputTokens || 500;
+      }
+    }
+
+    // 保存数据到localStorage
+    function saveToLocalStorage() {
+      const dataToSave = {
+        inputPrice: inputPrice.value,
+        outputPrice: outputPrice.value,
+        inputTokens: inputTokens.value,
+        outputTokens: outputTokens.value
+      };
+      
+      localStorage.setItem('tokenCalcData', JSON.stringify(dataToSave));
+    }
+
+    // 添加事件监听器，当输入变化时计算价格并保存数据
     [inputPrice, outputPrice, inputTokens, outputTokens].forEach(element => {
-      element.addEventListener('input', calculatePrice);
+      element.addEventListener('input', () => {
+        calculatePrice();
+        saveToLocalStorage();
+      });
     });
 
     // 计算价格的函数
@@ -243,8 +336,25 @@
       totalPriceElement.textContent = `$${totalCost.toFixed(6)}`;
     }
 
-    // 初始计算
-    calculatePrice();
+    // 页面加载时恢复数据
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFromLocalStorage();
+      calculatePrice();
+    });
+
+    // 添加模型预设按钮功能
+    document.querySelectorAll('.preset-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const inputPriceValue = this.dataset.input;
+        const outputPriceValue = this.dataset.output;
+        
+        inputPrice.value = inputPriceValue;
+        outputPrice.value = outputPriceValue;
+        
+        calculatePrice();
+        saveToLocalStorage();
+      });
+    });
   </script>
 </body>
 
